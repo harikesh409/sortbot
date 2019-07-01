@@ -1,6 +1,8 @@
 import requests
 import json
 import random
+import re
+import sys
 
 def get_question(nextSet):
     qsn_endpoint = endpoint + nextSet
@@ -12,17 +14,25 @@ def get_question(nextSet):
               ['solution'])[1:-1].replace("'", ''))
     print("="*100)
     print(str(question_json['question'])[1:-1].replace("'", ''))
-    sorted = input("Enter sorted list of Comma Seperated Values \n")
-    if type(sorted[0]) == str:
-        sorted = json.dumps(sorted.split(','))
-    sorted_json = '{"solution":'+sorted+'}'
+    answer = input("Enter sorted list of Comma Seperated Values \n")
+    if type(answer[0]) == str:
+        answer = re.sub(r'\s*,\s*',',',answer)
+        answer = json.dumps(answer.split(','))
+    sorted_json = '{"solution":'+answer+'}'
     # print(sorted_json)
     verify = requests.post(url=qsn_endpoint, json=json.loads(sorted_json))
     result = verify.json()
     if result['result'] == "finished":
-        return result
+        print("🏆 "*20)
+        print("You did it! You completed the challenge in " +
+          question['elapsedTime']+" milliseconds.\n")
+        print("See your certificate at "+endpoint+question['certificate'])
+        print("\nThank you for playing.")
+        print("👋  Bye bye.")
+        sys.exit(0)
     if result['result'] == "success":
-        print("You're right! "+result['message']+" Let's see... here's the next questions\n")
+        print("You're right! "+result['message'] +
+              " Let's see... here's the next questions\n")
         # print(result['nextSet'])
         get_question(result['nextSet'])
     else:
@@ -45,9 +55,4 @@ data = {'login': username}
 response = requests.post(url=endpoint+"/sortbot/exam/start", json=data)
 response_json = response.json()
 print(response_json['message'])
-question = get_question(response_json['nextSet'])
-if(question['result'] == "finished"):
-    print("You did it! You completed the challenge in " +
-          question['elapsedTime']+" milliseconds.\n")
-    print("See your certificate at "+question['certificate'])
-    print("\nThank you for playing.")
+get_question(response_json['nextSet'])
